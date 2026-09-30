@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dossier review - PXR 2.0 wireframe</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <nav class="side" data-active="week" aria-label="Main"></nav>
+    <main class="main">
+      <a href="this-week.html" class="small">Back to this week</a>
+
+      <div class="page-head" style="align-items: flex-start;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h1 style="font-size: 26px;">Regulation on [cloud services certification]</h1>
+          <span class="muted small">COM(2026) [###], published [date], [Directorate-General]. <a href="#">Open on EUR-Lex</a></span>
+          <div class="row-flex">
+            <span class="flag f-int">Intervene</span>
+            <strong>Impact rating −7 (scale of −10 to +10)</strong>
+          </div>
+        </div>
+        <div class="row-flex">
+          <button type="button" class="btn">Download Word file</button>
+          <button type="button" class="btn primary" id="approveBtn">Approve</button>
+        </div>
+      </div>
+
+      <div class="banner ok" id="approvedBanner" hidden>
+        <span>Approved. This dossier will go out in this week's email.</span>
+        <a class="btn primary" href="weekly-email.html">Go to weekly email</a>
+      </div>
+
+      <div class="dossier-grid">
+        <section class="card pad" aria-labelledby="dossier-title">
+          <div class="row-flex" style="padding-bottom: 8px;">
+            <h2 id="dossier-title">Dossier</h2>
+            <span class="muted small">About 2 pages</span>
+            <span class="spacer"></span>
+            <button type="button" class="btn" id="editBtn">Edit</button>
+          </div>
+          <div id="sections"></div>
+        </section>
+
+        <section class="card" aria-label="Source document and notes">
+          <div class="tabs" role="tablist">
+            <button type="button" class="tab on" role="tab" id="tab-source" aria-selected="true" data-tab="source">Source document</button>
+            <button type="button" class="tab" role="tab" id="tab-notes" aria-selected="false" data-tab="notes">Notes (<span id="noteCount">1</span>)</button>
+          </div>
+
+          <div class="pad stack" id="panel-source" role="tabpanel" aria-labelledby="tab-source" style="gap: 10px;">
+            <div class="row-flex small">
+              <a href="#">Explanatory memorandum</a>
+              <a href="#">Recitals</a>
+              <a href="#">Articles</a>
+              <a href="#">Annexes</a>
+            </div>
+            <div class="source-text">
+              <strong>Article 6</strong>
+              <div>1. [Source text of paragraph 1]</div>
+              <div class="conflict" id="art-6-2" tabindex="-1">2. [Source text of paragraph 2, highlighted because the dossier flags it as conflicting with U.S. priorities]</div>
+              <div>3. [Source text of paragraph 3]</div>
+              <strong>Article 9</strong>
+              <div>1. [Source text of paragraph 1]</div>
+            </div>
+            <span class="muted small">Select text in the proposal, then flag it.</span>
+            <button type="button" class="btn" style="align-self: flex-start;">Flag selected language</button>
+          </div>
+
+          <div class="pad stack" id="panel-notes" role="tabpanel" aria-labelledby="tab-notes" style="gap: 10px;" hidden>
+            <span class="muted small">Notes stay inside PXR and are never emailed.</span>
+            <div class="stack" id="notes" style="gap: 8px;"></div>
+            <label class="strong" for="note">Add a note</label>
+            <textarea id="note" rows="3"></textarea>
+            <span class="error" id="noteErr" hidden>Write a note first.</span>
+            <button type="button" class="btn" id="addNote" style="align-self: flex-start;">Add note</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="bonus">
+        <strong>Legislative stage (bonus)</strong>
+        <strong style="color: var(--ink);">Commission proposal</strong>
+        <span>then Council</span>
+        <span>then Parliament</span>
+        <span>then adopted</span>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var approved = false;
+    var editing = false;
+    var notes = [{ who: '[Reviewer name]', text: 'Check with the [country] desk before this goes out.' }];
+    var sections = [
+      { title: 'Bottom line on impact on the United States', text: '[2–3 sentences on how the proposal affects U.S. interests and why it needs attention.]' },
+      { title: 'Example of impact on a U.S. company or person', text: '[Concrete example, such as a U.S. cloud provider losing eligibility for public contracts.]', cite: 'Art. 6(2)' },
+      { title: 'Estimated annual dollar impact on U.S. companies', text: '[$ range], with a one-line basis for the estimate' },
+      { title: 'Key provisions', text: '[Summary of the main provisions]', cite: 'Art. 6, Art. 9' },
+      { title: 'Language that conflicts with U.S. priorities', text: '[Quoted passage] conflicts with [priority from the National Security Strategy].', cite: 'Art. 6(2)', conflict: true },
+      { title: 'Recommended changes to improve U.S. outcomes', text: 'In Art. 6(2), [change or remove specific wording].' },
+      { title: 'Next steps', text: 'Suggested outreach: [country desk], [State Department bureau].' },
+      { title: 'Checked against', text: 'National Security Strategy, Executive Orders, [optional sources used]' }
+    ];
+
+    function renderSections() {
+      document.getElementById('sections').innerHTML = sections.map(function (s, i) {
+        var body = editing
+          ? '<textarea rows="3" data-i="' + i + '" aria-label="' + PXR.esc(s.title) + '">' + PXR.esc(s.text) + '</textarea>'
+          : '<p' + (s.conflict ? ' class="conflict"' : '') + '>' + PXR.esc(s.text) +
+            (s.cite ? ' <a href="#art-6-2" class="cite" data-cite>' + PXR.esc(s.cite) + '</a>' : '') + '</p>';
+        return '<div class="sec"><h3>' + PXR.esc(s.title) + '</h3>' + body + '</div>';
+      }).join('');
+      var btn = document.getElementById('editBtn');
+      btn.textContent = editing ? 'Save changes' : 'Edit';
+      btn.classList.toggle('primary', editing);
+    }
+
+    function renderApproval() {
+      document.getElementById('approvedBanner').hidden = !approved;
+      var btn = document.getElementById('approveBtn');
+      btn.textContent = approved ? 'Undo approval' : 'Approve';
+      btn.classList.toggle('primary', !approved);
+      PXR.refresh();
+    }
+
+    function renderNotes() {
+      document.getElementById('notes').innerHTML = notes.map(function (n) {
+        return '<div class="note"><strong class="small">' + PXR.esc(n.who) + '</strong><span>' + PXR.esc(n.text) + '</span></div>';
+      }).join('');
+      document.getElementById('noteCount').textContent = notes.length;
+    }
+
+    function showTab(name) {
+      ['source', 'notes'].forEach(function (t) {
+        var on = t === name;
+        document.getElementById('panel-' + t).hidden = !on;
+        var tab = document.getElementById('tab-' + t);
+        tab.classList.toggle('on', on);
+        tab.setAttribute('aria-selected', String(on));
+      });
+    }
+
+    document.getElementById('approveBtn').addEventListener('click', function () {
+      approved = !approved;
+      if (approved && editing) { editing = false; renderSections(); }
+      renderApproval();
+    });
+
+    document.getElementById('editBtn').addEventListener('click', function () {
+      editing = !editing;
+      if (editing && approved) { approved = false; renderApproval(); }
+      renderSections();
+    });
+
+    document.getElementById('sections').addEventListener('input', function (e) {
+      var i = e.target.getAttribute('data-i');
+      if (i !== null) sections[Number(i)].text = e.target.value;
+    });
+
+    document.getElementById('sections').addEventListener('click', function (e) {
+      var cite = e.target.closest('[data-cite]');
+      if (!cite) return;
+      e.preventDefault();
+      showTab('source');
+      var target = document.getElementById('art-6-2');
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.focus({ preventScroll: true });
+    });
+
+    document.querySelector('.tabs').addEventListener('click', function (e) {
+      var t = e.target.closest('[data-tab]');
+      if (t) showTab(t.getAttribute('data-tab'));
+    });
+
+    document.getElementById('addNote').addEventListener('click', function () {
+      var box = document.getElementById('note');
+      var text = box.value.trim();
+      if (!text) { document.getElementById('noteErr').hidden = false; return; }
+      notes.push({ who: '[User name]', text: text });
+      box.value = '';
+      renderNotes();
+    });
+    document.getElementById('note').addEventListener('input', function () {
+      document.getElementById('noteErr').hidden = true;
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      renderSections();
+      renderNotes();
+      renderApproval();
+    });
+  </script>
+</body>
+</html>

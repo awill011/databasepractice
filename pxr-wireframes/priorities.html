@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Priorities and sources - PXR 2.0 wireframe</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <nav class="side" data-active="priorities" aria-label="Main"></nav>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Priorities and sources</h1>
+          <p class="sub">These settings apply to everyone in the office. Only admins can change them.</p>
+        </div>
+        <div class="row-flex">
+          <span class="small muted" id="status" role="status">Last changed [date] by [name]</span>
+          <button type="button" class="btn primary" id="saveBtn">Save changes</button>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="stack">
+          <section class="card pad">
+            <h2>Policy sources</h2>
+            <p class="muted small" style="margin: 4px 0 8px;">Each proposal is checked against these documents.</p>
+            <div id="sources"></div>
+            <button type="button" class="btn" style="margin-top: 8px;">Upload a new version</button>
+          </section>
+
+          <section class="card pad stack" style="gap: 10px;">
+            <h2>When to flag Intervene</h2>
+            <span class="muted small">Impact ratings run from −10 to +10.</span>
+            <div class="row-flex">
+              <label for="intAt">Flag Intervene at a rating of</label>
+              <input id="intAt" type="number" min="-10" max="-1" step="1" value="-4">
+              <span>or lower</span>
+            </div>
+            <span id="monText">Monitor covers −3 to −1. Anything above 0 is Favorable.</span>
+          </section>
+        </div>
+
+        <section class="card pad">
+          <h2>Priority areas</h2>
+          <p class="muted small" style="margin: 4px 0 8px;">A higher weight makes conflicts in that area count more.</p>
+          <div id="priorities"></div>
+          <button type="button" class="btn" style="margin-top: 8px;">Add a priority area</button>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var sources = [
+      { name: 'National Security Strategy', detail: 'Version from [date]', required: true, on: true },
+      { name: 'Executive Orders', detail: '[Number] documents, updated [date]', required: true, on: true },
+      { name: 'State Department press releases and statements', detail: 'Used to cross-check flagged proposals', required: false, on: true },
+      { name: 'Speeches by the President and cabinet secretaries', detail: 'Used to cross-check flagged proposals', required: false, on: false },
+      { name: 'Social media posts by officials', detail: 'Only if API access is available', required: false, on: false }
+    ];
+    var priorities = [
+      { id: 'trade', name: 'Trade and market access', detail: 'Tariffs, procurement, U.S. company access', w: 4 },
+      { id: 'tech', name: 'Technology and data', detail: 'Cloud, AI, cross-border data flows', w: 4 },
+      { id: 'energy', name: 'Energy security', detail: 'LNG, energy imports, critical infrastructure', w: 3 },
+      { id: 'security', name: 'Defense and security', detail: 'Defense industry, sanctions, NATO', w: 5 },
+      { id: 'supply', name: 'Supply chains', detail: 'Critical minerals, economic coercion', w: 3 }
+    ];
+
+    function minus(n) { return n < 0 ? '\u2212' + Math.abs(n) : String(n); }
+
+    function markDirty() {
+      var s = document.getElementById('status');
+      s.textContent = 'You have unsaved changes';
+      s.style.color = '';
+    }
+
+    function render() {
+      document.getElementById('sources').innerHTML = sources.map(function (s, i) {
+        return '<label class="src">' +
+          '<input type="checkbox" data-src="' + i + '"' + (s.on ? ' checked' : '') + (s.required ? ' disabled' : '') + '>' +
+          '<span class="spacer stack" style="gap: 2px;"><strong>' + PXR.esc(s.name) + '</strong><span class="muted small">' + PXR.esc(s.detail) + '</span></span>' +
+          '<span class="tag">' + (s.required ? 'Required' : 'Optional') + '</span>' +
+          '</label>';
+      }).join('');
+
+      document.getElementById('priorities').innerHTML = priorities.map(function (p, i) {
+        return '<div class="pri">' +
+          '<span class="stack" style="gap: 2px;"><label class="strong" for="pri-' + p.id + '">' + PXR.esc(p.name) + '</label><span class="muted small">' + PXR.esc(p.detail) + '</span></span>' +
+          '<input id="pri-' + p.id + '" type="range" min="0" max="5" step="1" value="' + p.w + '" data-pri="' + i + '">' +
+          '<strong id="out-' + p.id + '" style="text-align: right;">' + p.w + '</strong>' +
+          '</div>';
+      }).join('');
+    }
+
+    document.getElementById('sources').addEventListener('change', function (e) {
+      var i = e.target.getAttribute('data-src');
+      if (i === null) return;
+      sources[Number(i)].on = e.target.checked;
+      markDirty();
+    });
+
+    document.getElementById('priorities').addEventListener('input', function (e) {
+      var i = e.target.getAttribute('data-pri');
+      if (i === null) return;
+      var p = priorities[Number(i)];
+      p.w = Math.round(Number(e.target.value));
+      document.getElementById('out-' + p.id).textContent = p.w;
+      markDirty();
+    });
+
+    document.getElementById('intAt').addEventListener('change', function (e) {
+      var n = Math.round(Number(e.target.value));
+      if (isNaN(n)) n = -4;
+      n = Math.max(-10, Math.min(-1, n));
+      e.target.value = n;
+      var from = n + 1;
+      document.getElementById('monText').textContent = from <= -1
+        ? 'Monitor covers ' + minus(from) + ' to −1. Anything above 0 is Favorable.'
+        : 'Every negative rating is flagged Intervene. Anything above 0 is Favorable.';
+      markDirty();
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', function () {
+      var s = document.getElementById('status');
+      s.textContent = 'Saved. New settings apply from the next weekly run.';
+      s.style.color = 'var(--ok-ink)';
+    });
+
+    document.addEventListener('DOMContentLoaded', render);
+  </script>
+</body>
+</html>

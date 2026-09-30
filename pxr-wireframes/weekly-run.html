@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly run - PXR 2.0 wireframe</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <nav class="side" data-active="run" aria-label="Main"></nav>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Weekly run</h1>
+          <p class="sub">Every week PXR pulls new Commission proposals from EUR-Lex and writes a dossier for each one.</p>
+        </div>
+        <button type="button" class="btn primary" id="runBtn">Run now</button>
+      </div>
+
+      <div class="banner info" id="runBanner" role="status" hidden>
+        Run started. Reviewers get an email when the new dossiers are ready.
+      </div>
+
+      <div class="two-col">
+        <div class="stack">
+          <section class="card pad stack" style="gap: 10px;">
+            <h2>Schedule</h2>
+            <div class="row-flex" style="align-items: flex-end;">
+              <div class="field">
+                <label for="day">Day</label>
+                <select id="day"><option>Tuesday</option><option>Monday</option><option>Wednesday</option></select>
+              </div>
+              <div class="field">
+                <label for="time">Time (Eastern)</label>
+                <input id="time" type="time" value="07:00">
+              </div>
+            </div>
+          </section>
+
+          <section class="card pad">
+            <h2 style="padding-bottom: 8px;">What gets pulled from EUR-Lex</h2>
+            <div class="kv"><span class="muted">Documents</span><span>Preparatory documents by the European Commission</span></div>
+            <div class="kv"><span class="muted">Status</span><span>Pending proposals only</span></div>
+            <div class="kv"><span class="muted">Language</span><span>English</span></div>
+            <div class="kv"><span class="muted">Dates</span><span>Everything since the last successful run</span></div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="card pad">
+            <h2 style="padding-bottom: 8px;">Recent runs</h2>
+            <div class="run head"><span>Date</span><span>Found</span><span>Dossiers</span><span>Result</span></div>
+            <div class="run"><span>Tue [date]</span><span>6</span><span>6</span><span>Done</span></div>
+            <div class="run"><span>Tue [date]</span><span>19</span><span>18</span><span class="error" style="font-size: 14px; font-weight: 700;">1 proposal failed. <a href="#">Try again</a></span></div>
+            <div class="run"><span>Tue [date]</span><span>3</span><span>3</span><span>Done</span></div>
+            <div class="run"><span>Tue [date]</span><span>0</span><span>0</span><span>No new proposals this week</span></div>
+          </section>
+
+          <section class="card pad stack" style="gap: 10px;">
+            <h2>Analyze one proposal now</h2>
+            <div class="row-flex" style="align-items: flex-end;">
+              <div class="field spacer">
+                <label for="com">COM number or EUR-Lex link</label>
+                <input id="com" type="text" placeholder="COM(2026) 123">
+              </div>
+              <button type="button" class="btn" id="analyzeBtn">Analyze</button>
+            </div>
+            <span class="error" id="comErr" hidden>Enter a COM number or EUR-Lex link first.</span>
+            <span class="small" id="comOk" hidden style="color: var(--ok-ink); font-weight: 700;">Added to the queue. Its dossier will appear under This week.</span>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    document.getElementById('runBtn').addEventListener('click', function () {
+      this.textContent = 'Running';
+      document.getElementById('runBanner').hidden = false;
+    });
+    document.getElementById('analyzeBtn').addEventListener('click', function () {
+      var val = document.getElementById('com').value.trim();
+      document.getElementById('comErr').hidden = !!val;
+      document.getElementById('comOk').hidden = !val;
+    });
+    document.getElementById('com').addEventListener('input', function () {
+      document.getElementById('comErr').hidden = true;
+      document.getElementById('comOk').hidden = true;
+    });
+  </script>
+</body>
+</html>

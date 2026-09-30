@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>This week - PXR 2.0 wireframe</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <nav class="side" data-active="week" aria-label="Main"></nav>
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>This week's proposals</h1>
+          <p class="sub">Week of [date]. Open a proposal to review its dossier.</p>
+        </div>
+        <a class="btn" href="weekly-email.html">Go to weekly email</a>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="row-flex">
+        <div class="chips" id="chips"></div>
+        <span class="spacer"></span>
+        <label for="tag" class="muted small">Tag</label>
+        <select id="tag">
+          <option value="">All tags</option>
+          <option>Trade</option>
+          <option>Technology and data</option>
+          <option>Supply chains</option>
+          <option>Energy</option>
+          <option>Security</option>
+          <option>Agriculture</option>
+          <option>Environment</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="list-head week-cols">
+          <span>Alignment</span><span>Proposal, most urgent first</span><span>Rating</span><span>Tags</span><span>Status</span>
+        </div>
+        <div id="rows"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var rows = PXR.weekRows;
+    var filter = 'all';
+    var tag = '';
+    var stats = [
+      ['int', 'Conflicts with U.S. priorities'],
+      ['mon', 'Some concerns'],
+      ['fav', 'Aligns with U.S. interests'],
+      ['none', 'Rating of 0']
+    ];
+
+    function count(k) { return rows.filter(function (r) { return r.flag === k; }).length; }
+
+    function render() {
+      document.getElementById('stats').innerHTML = stats.map(function (s) {
+        return '<div class="card stat">' + PXR.flag(s[0]) + '<span class="stat-num">' + count(s[0]) + '</span><span class="muted small">' + s[1] + '</span></div>';
+      }).join('');
+
+      var chips = [['all', 'All'], ['int', 'Intervene'], ['mon', 'Monitor'], ['fav', 'Favorable'], ['none', 'No impact']];
+      document.getElementById('chips').innerHTML = chips.map(function (c) {
+        var n = c[0] === 'all' ? rows.length : count(c[0]);
+        return '<button type="button" class="chip' + (filter === c[0] ? ' on' : '') + '" data-filter="' + c[0] + '" aria-pressed="' + (filter === c[0]) + '">' + c[1] + ' (' + n + ')</button>';
+      }).join('');
+
+      var shown = rows
+        .filter(function (r) { return filter === 'all' || r.flag === filter; })
+        .filter(function (r) { return !tag || r.tags.indexOf(tag) >= 0; })
+        .sort(function (a, b) { return a.rating - b.rating; });
+
+      document.getElementById('rows').innerHTML = shown.length ? shown.map(function (r) {
+        return '<a class="list-row week-cols" href="dossier.html">' +
+          '<span>' + PXR.flag(r.flag) + '</span>' +
+          '<span><span class="row-title">' + PXR.esc(r.title) + '</span><br><span class="row-meta">' + PXR.esc(r.id) + ', published ' + PXR.esc(r.date) + '</span></span>' +
+          '<span class="row-rating">' + PXR.rating(r.rating) + '</span>' +
+          '<span class="muted">' + PXR.esc(r.tags.join(', ')) + '</span>' +
+          '<span>' + PXR.esc(r.status) + '</span>' +
+          '</a>';
+      }).join('') : '<div class="empty">No proposals match these filters. Choose All or All tags.</div>';
+
+      PXR.refresh();
+    }
+
+    document.getElementById('chips').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-filter]');
+      if (!b) return;
+      filter = b.getAttribute('data-filter');
+      render();
+    });
+    document.getElementById('tag').addEventListener('change', function (e) {
+      tag = e.target.value;
+      render();
+    });
+    document.addEventListener('DOMContentLoaded', render);
+  </script>
+</body>
+</html>

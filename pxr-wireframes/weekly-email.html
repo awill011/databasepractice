@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly email - PXR 2.0 wireframe</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js"></script>
+</head>
+<body>
+  <div class="layout">
+    <nav class="side" data-active="email" aria-label="Main"></nav>
+    <main class="main">
+      <div>
+        <h1>Weekly email</h1>
+        <p class="sub">Every dossier you approve lands here. Check it, then send it once.</p>
+      </div>
+
+      <div class="banner ok" id="sentBanner" hidden>
+        <span id="sentText">Weekly email sent.</span>
+        <a class="btn" href="this-week.html">Back to this week</a>
+      </div>
+
+      <div class="card email" id="email">
+        <div class="email-line">
+          <span class="email-key">To</span>
+          <strong class="spacer" id="toText"></strong>
+          <button type="button" class="btn quiet" id="changeBtn" aria-expanded="false" aria-controls="recipients">Change</button>
+        </div>
+
+        <div class="email-line" id="recipients" hidden style="flex-direction: column; align-items: stretch; gap: 4px;">
+          <div id="lists"></div>
+          <label class="strong" for="extra" style="padding-top: 6px;">Also send to</label>
+          <input id="extra" type="email" placeholder="name@state.gov" style="max-width: 360px;">
+        </div>
+
+        <div class="email-line">
+          <span class="email-key">Subject</span>
+          <span>PXR weekly EU proposals, week of [date]</span>
+        </div>
+
+        <div id="items" class="stack" style="gap: 12px;"></div>
+
+        <span class="muted small">Each dossier is attached as a Word file.</span>
+        <span class="error" id="sendErr" hidden></span>
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="button" class="btn primary" id="sendBtn">Send weekly email</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    var items = [
+      { flag: 'int', title: 'Regulation on [cloud services certification]' },
+      { flag: 'mon', title: 'Regulation on [methane rules for energy imports]' },
+      { flag: 'fav', title: 'Decision on [defense industrial cooperation]' }
+    ];
+    var lists = [
+      { name: 'EUR/ERA office', note: ' (default)', on: true },
+      { name: '[Country desk list]', note: '', on: false },
+      { name: '[Bureau list]', note: '', on: false }
+    ];
+
+    function recipients() {
+      var names = lists.filter(function (l) { return l.on; }).map(function (l) { return l.name; });
+      var extra = document.getElementById('extra').value.trim();
+      if (extra) names.push(extra);
+      return names;
+    }
+
+    function renderTo() {
+      var r = recipients();
+      document.getElementById('toText').textContent = r.length ? r.join(', ') : 'No recipients selected';
+    }
+
+    function renderLists() {
+      document.getElementById('lists').innerHTML = lists.map(function (l, i) {
+        return '<label class="opt"><input type="checkbox" data-list="' + i + '"' + (l.on ? ' checked' : '') + '><span>' + PXR.esc(l.name + l.note) + '</span></label>';
+      }).join('');
+    }
+
+    function renderItems() {
+      document.getElementById('items').innerHTML = items.length ? items.map(function (d, i) {
+        return '<div class="row-flex" style="align-items: flex-start; flex-wrap: nowrap;">' +
+          '<div class="spacer stack" style="gap: 4px;">' +
+            '<div class="row-flex" style="gap: 8px;">' + PXR.flag(d.flag) + '<strong>' + PXR.esc(d.title) + '</strong></div>' +
+            '<span class="muted small">[Bottom line on impact on the United States]</span>' +
+          '</div>' +
+          '<button type="button" class="btn quiet" data-remove="' + i + '" aria-label="Remove ' + PXR.esc(d.title) + ' from this email">Remove</button>' +
+        '</div>';
+      }).join('') : '<p style="margin: 0;">No approved dossiers yet. <a href="this-week.html">Review this week\'s proposals</a> and approve the ones to include.</p>';
+      PXR.refresh();
+    }
+
+    function hideError() { document.getElementById('sendErr').hidden = true; }
+
+    document.getElementById('changeBtn').addEventListener('click', function () {
+      var panel = document.getElementById('recipients');
+      panel.hidden = !panel.hidden;
+      this.textContent = panel.hidden ? 'Change' : 'Done';
+      this.setAttribute('aria-expanded', String(!panel.hidden));
+    });
+
+    document.getElementById('lists').addEventListener('change', function (e) {
+      var i = e.target.getAttribute('data-list');
+      if (i === null) return;
+      lists[Number(i)].on = e.target.checked;
+      hideError();
+      renderTo();
+    });
+    document.getElementById('extra').addEventListener('input', function () { hideError(); renderTo(); });
+
+    document.getElementById('items').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-remove]');
+      if (!b) return;
+      items.splice(Number(b.getAttribute('data-remove')), 1);
+      hideError();
+      renderItems();
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', function () {
+      var err = document.getElementById('sendErr');
+      if (!items.length) { err.textContent = 'Approve at least one dossier before sending.'; err.hidden = false; return; }
+      if (!recipients().length) { err.textContent = 'Choose at least one recipient.'; err.hidden = false; return; }
+      document.getElementById('email').hidden = true;
+      document.getElementById('sentText').textContent = 'Weekly email sent to ' + recipients().join(', ') + '.';
+      document.getElementById('sentBanner').hidden = false;
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      renderLists();
+      renderItems();
+      renderTo();
+    });
+  </script>
+</body>
+</html>

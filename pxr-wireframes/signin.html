@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in - PXR 2.0 wireframe</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;700&display=swap">
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js"></script>
+</head>
+<body>
+  <header class="topbar" data-topbar></header>
+  <div class="stripes" data-show-theme="usa" aria-hidden="true" style="padding: 4px 0; background: #ffffff;"><span></span><span></span></div>
+  <main class="center">
+    <form class="card signin" id="signin" novalidate>
+      <div>
+        <h1>Sign in</h1>
+        <p class="sub">EU legislative proposal analysis for EUR/ERA</p>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="name@state.gov" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="pw">Password</label>
+        <input id="pw" type="password" autocomplete="current-password">
+      </div>
+      <span class="error" id="err" hidden>Enter your email and password.</span>
+      <button class="btn primary" type="submit">Sign in</button>
+      <a href="#" class="small">Forgot your password?</a>
+      <a href="index.html" class="small">Back to the screen list</a>
+    </form>
+  </main>
+  <script>
+    document.getElementById('signin').addEventListener('submit', function (e) {
+      e.preventDefault();
+      // Wireframe only: any input signs you in, but both fields must be filled.
+      var email = document.getElementById('email').value.trim();
+      var pw = document.getElementById('pw').value;
+      var err = document.getElementById('err');
+      if (!email || !pw) { err.hidden = false; return; }
+      PXR.go('this-week.html');
+    });
+    ['email', 'pw'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', function () { document.getElementById('err').hidden = true; });
+    });
+  </script>
+</body>
+</html>

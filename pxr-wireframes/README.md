@@ -1,49 +1,42 @@
-# PXR 2.0 wireframes
+# PXR document storage (Postgres + bytea)
 
-A clickable draft of the PXR 2.0 dossier review tool, built as plain HTML, CSS and JavaScript. There's no build step and nothing to install.
+Files are stored in one table, `documents`, with the file bytes in a `bytea` column.
 
-## Opening it
+## Run it
 
-1. Unzip the folder. Keep all the files together, including the `assets` folder.
-2. Open `index.html` in a browser (double-click it, or drag it into a browser window).
-3. Start at **Sign in** to walk through the weekly flow, or jump to any screen from the list. On the sign-in screen, any email and password work.
+```bash
+createdb pxr                                   # or use an existing database
+cd server
+npm install
+DATABASE_URL=postgres://USER:PASS@localhost:5432/pxr npm start
+```
 
-The Public Sans font loads from Google Fonts when you're online. Offline, the pages fall back to your system font and everything else still works.
+The table is created automatically on startup (`schema.sql`). The API listens on port 3000.
 
-## Screens
+## API
 
-| File | Screen | What it shows |
+| Method | Path | What it does |
 |---|---|---|
-| `signin.html` | Sign in | Email and password sign-in |
-| `this-week.html` | This week | New proposals with alignment flags, filters and status |
-| `dossier.html` | Dossier review | Dossier sections, editing, citations, source document, notes, approval |
-| `weekly-email.html` | Weekly email | Approved dossiers assembled into one email, recipients, send |
-| `archive.html` | Archive | Search and filter past dossiers |
-| `priorities.html` | Priorities and sources (admin) | Policy sources, priority weights, Intervene threshold |
-| `weekly-run.html` | Weekly run (admin) | Schedule, EUR-Lex search settings, run history, analyze one proposal |
+| POST | `/api/documents?filename=report.docx&proposal_id=COM(2026)123` | Upload. The request body is the raw file. Returns the new row (no file bytes). |
+| GET | `/api/documents` | List documents. Optional `?proposal_id=` filter. |
+| GET | `/api/documents/:id` | Download the file. |
+| DELETE | `/api/documents/:id` | Delete it. |
 
-## The weekly flow
+```bash
+curl -X POST -H "Content-Type: application/pdf" --data-binary @brief.pdf \
+  "http://localhost:3000/api/documents?filename=brief.pdf&proposal_id=COM(2026)123"
+curl -o brief.pdf http://localhost:3000/api/documents/1
+```
 
-1. **This week:** open a proposal.
-2. **Dossier review:** edit if needed, check citations against the source, add notes, then **Approve**.
-3. **Weekly email:** confirm the recipients and the list of approved dossiers, then **Send weekly email**.
+## Size limits
 
-## Color themes
+- Default upload limit is **100 MB**. Change it with `MAX_UPLOAD_MB`. Larger files get a 413.
+- Postgres allows up to 1 GB in a single `bytea` value, but this version holds the whole file in memory
+  on upload and download. Peak server memory is roughly **10x the file size** (measured: ~1 GB peak
+  while handling a 90 MB file). Size the server for that, or keep the limit low.
+- To go beyond ~100 MB, store each file as several 4 MB `bytea` rows and stream them.
 
-Every screen has a **Color theme** menu: Blue, EU, American, Dark, and Grayscale wireframe. The choice carries across screens. Use Grayscale wireframe when reviewing layout only.
+## Good habits
 
-The eagle and star marks are simple original shapes, not the Great Seal of the United States or the official EU emblem, which have usage restrictions.
-
-## Notes for the team
-
-- All content in [brackets] is placeholder text. Nothing here is real data.
-- Buttons only simulate their result. Nothing is saved, sent or uploaded, and state resets when you reload a page.
-- The **Legislative stage** strip on the dossier page is a bonus feature, shown dashed on purpose.
-- Out of scope per the partner kickoff: version history, State Department single sign-on, and SharePoint integration.
-- Open items to confirm with the partner: Intervene and Monitor thresholds, whether priority weights change ratings or only sorting, who can approve and send, and whether one weekly email is the right delivery format.
-
-## Editing
-
-- `assets/styles.css` holds all colors and themes. Each theme is a block of CSS variables near the top.
-- `assets/app.js` builds the sidebar, handles themes, and holds the sample proposal data.
-- Each screen's own behavior is in a short script at the bottom of its HTML file.
+- Never `SELECT *` from `documents` in a list or search query. Leave out `data`, or every file loads into memory.
+- Back up with `pg_dump`. Files are in the database dump, so dumps grow with your documents.

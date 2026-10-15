@@ -133,9 +133,7 @@ curl -X DELETE http://localhost:3000/api/documents/1
 
 The wireframes currently use placeholder proposal data in `pxr-wireframes/assets/app.js`; they are not connected to the document API. The backend is a separate prototype service intended to support document storage.
 
-## License
 
-No license has been specified for this repository.
+
 ```
 
-If you want, I can also tailor it to a more polished project-style README with a stronger product introduction and screenshots.
